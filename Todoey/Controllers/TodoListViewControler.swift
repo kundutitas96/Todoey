@@ -8,8 +8,9 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class TodoListViewController: UITableViewController {
+class TodoListViewController: SwipeTableViewController {
     
     var  todoItems: Results<Item>?
     let realm = try! Realm()
@@ -36,11 +37,17 @@ class TodoListViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = UITableViewCell(style: .default, reuseIdentifier: "ToDoItemCell")
+        let cell = super.tableView(tableView, cellForRowAt: indexPath )
         
         if let item = todoItems? [indexPath.row] {
             
             cell.textLabel?.text = item.title
+            
+            if let colour = UIColor(hexString: selectedCategory!.colour)? .darken(byPercentage: CGFloat(indexPath.row) / CGFloat(todoItems!.count)) {
+                cell.backgroundColor = colour
+                cell .textLabel?.textColor = ContrastColorOf(colour, returnFlat: true)
+            }
+            
             //Ternary Operator ==>
             cell.accessoryType = item.done ? .checkmark : .none
         } else {
@@ -115,6 +122,18 @@ class TodoListViewController: UITableViewController {
         todoItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
 
         tableView.reloadData()
+    }
+    
+    override func updateModel(at indexPath: IndexPath) {
+        if let item = todoItems?[indexPath.row] {
+            do {
+                try realm.write {
+                    realm.delete(item)
+                }
+            } catch {
+                print("Error deleting items \(error)")
+            }
+        }
     }
  
 }
